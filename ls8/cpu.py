@@ -1,21 +1,17 @@
 """CPU functionality."""
-
 import sys
 
 class CPU:
-    """Main CPU class."""
-
     def __init__(self):
-        """Construct a new CPU."""
-        pass
+        self.ram = [0] * 256 #256 bytes of Memory
+        self.reg = [0] * 8 #8 registers for quickly storing data
+        self.pc = 0 #Progam counter for keeping a pointer of where we are in the program
+
 
     def load(self):
-        """Load a program into memory."""
-
         address = 0
 
         # For now, we've just hardcoded a program:
-
         program = [
             # From print8.ls8
             0b10000010, # LDI R0,8
@@ -41,11 +37,6 @@ class CPU:
             raise Exception("Unsupported ALU operation")
 
     def trace(self):
-        """
-        Handy function to print out the CPU state. You might want to call this
-        from run() if you need help debugging.
-        """
-
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
             #self.fl,
@@ -60,6 +51,38 @@ class CPU:
 
         print()
 
+    def ram_read(self, MAR): #Takes in a Memory Address Register (MAR) which is the position in the memory wanting to read
+        return self.ram[MAR]
+
+    def ram_write(self, MAR, MDR): #Takes in the MAR like above function. Also takes in Memory Data Register (MDR) which is the data getting writting to the MAR
+        self.ram[MAR] = MDR
+
+
     def run(self):
-        """Run the CPU."""
-        pass
+        running = True
+
+        while running:
+            ir = self.ram[self.pc]
+
+            if ir == 0b00000001: #Halt
+                running = False
+                self.pc += 1
+
+            elif ir == 0b10000010: #LDI
+                reg_num = self.ram_read(self.pc + 1)
+                val = self.ram_read(self.pc + 2)
+                self.reg[reg_num] = val
+                self.pc += 3
+
+            elif ir == 0b01000111: #Print
+                reg_num = self.ram_read(self.pc + 1)
+                print(self.reg[reg_num])
+                self.pc += 2
+
+            else:
+                print(f'Unknown Instruction {ir} at address {self.pc}')
+                sys.exit(1)
+
+newCPU = CPU()
+newCPU.load()
+newCPU.run()
