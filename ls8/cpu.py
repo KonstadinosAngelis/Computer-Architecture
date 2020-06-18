@@ -1,7 +1,7 @@
 """CPU functionality."""
 import sys
 
-program_file = "ls8\examples\stack.ls8"
+program_file = "ls8\examples\call.ls8"
 
 class CPU:
     def __init__(self):
@@ -15,8 +15,11 @@ class CPU:
             0b10000010: self.ldi,
             0b01000111: self.print,
             0b10100010: self.multiply,
+            0b10100000: self.add,
             0b01000101: self.push,
             0b01000110: self.pop,
+            0b01010000: self.call,
+            0b00010001: self.ret,
         }
 
     def load(self, program):
@@ -58,6 +61,14 @@ class CPU:
         print(self.reg[reg_num])
         self.pc += 2
 
+    def add(self):
+        num1 = self.reg[self.ram_read(self.pc + 1)]
+        num2 = self.reg[self.ram_read(self.pc + 2)]
+        
+        self.reg[self.ram_read(self.pc + 1)] = (num1 + num2)
+
+        self.pc += 3
+
     def multiply(self):
         num1 = self.reg[self.ram_read(self.pc + 1)]
         num2 = self.reg[self.ram_read(self.pc + 2)]
@@ -68,11 +79,14 @@ class CPU:
 
         self.pc += 3
     
-    def push(self):
+    def push(self, push_num = None):
         self.reg[self.sp] -= 1
-
-        reg_num = self.ram_read(self.pc + 1)
-        val = self.reg[reg_num]
+        
+        if push_num:
+            val = push_num
+        else:
+            reg_num = self.ram_read(self.pc + 1)
+            val = self.reg[reg_num]
 
         stack_pos = self.reg[self.sp]
 
@@ -91,6 +105,24 @@ class CPU:
         self.reg[reg_num] = pop_val
 
         self.pc += 2
+
+    def call(self):
+        reg_val = self.reg[self.ram_read(self.pc + 1)]
+        self.push(self.pc)
+        self.pc = reg_val
+
+    def ret(self):
+        
+        pop_val = self.ram_read(self.reg[self.sp])
+
+        self.ram_write(self.reg[self.sp], 0)
+        self.reg[self.sp] += 1
+        
+        self.pc = pop_val + 2
+
+        
+
+
         
     def run(self):
         running = True
