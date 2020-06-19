@@ -1,12 +1,13 @@
 """CPU functionality."""
 import sys
 
-program_file = "ls8\examples\call.ls8"
+program_file = "ls8\examples\sctest.ls8"
 
 class CPU:
     def __init__(self):
         self.ram = [0] * 256 #256 bytes of Memory
         self.reg = [0] * 8 #8 registers for quickly storing data
+        self.flags = [0] * 8
         self.pc = 0 #Progam counter for keeping a pointer of where we are in the program
         self.sp = 7
         self.reg[self.sp] = 0xf4
@@ -20,6 +21,10 @@ class CPU:
             0b01000110: self.pop,
             0b01010000: self.call,
             0b00010001: self.ret,
+            0b01010100: self.jpm,
+            0b10100111: self.comp,
+            0b01010101: self.jeq,
+            0b01010110: self.jne,
         }
 
     def load(self, program):
@@ -120,9 +125,38 @@ class CPU:
         
         self.pc = pop_val + 2
 
+    def jpm(self):
+        jump_pos = self.reg[self.ram_read(self.pc + 1)]
+        self.pc = jump_pos
+
+    def comp(self):
+        val1 = self.reg[self.ram_read(self.pc + 1)]
+        val2 = self.reg[self.ram_read(self.pc + 2)]
         
+        if val1 == val2:
+            self.flags[self.ram_read(self.pc + 1)] = 'E'
+        if val1 < val2:
+            self.flags[self.ram_read(self.pc + 1)] = 'L'
+        if val1 > val2:
+            self.flags[self.ram_read(self.pc + 1)] = 'G'
 
+        self.pc += 3
 
+    def jeq(self):
+        comp_val = self.flags[0]
+        if comp_val == 'E':
+            jump_val = self.reg[self.ram_read(self.pc + 1)]
+            self.pc = jump_val
+        else:
+            self.pc += 2
+
+    def jne(self):
+        comp_val = self.flags[0]
+        if comp_val != 'E':
+            jump_val = self.reg[self.ram_read(self.pc + 1)]
+            self.pc = jump_val
+        else:
+            self.pc += 2
         
     def run(self):
         running = True
